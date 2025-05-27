@@ -430,72 +430,7 @@ The CLI uses the Rich library to provide beautiful, colorized output:
 
 ---
 
-## Troubleshooting
-
-### Common Issues
-
-1. **API Connection Issues**
-   - Check your internet connection
-   - Verify the API URL in your config
-   - Ensure the API service is running
-   - Try increasing the timeout if you have a slow connection
-
-2. **Empty or Invalid Responses**
-   - Run `dzdk health` to check API status
-   - Verify the API endpoint is returning valid JSON
-   - Check for any error messages in the response
-
-3. **Permission Issues**
-   - Ensure write access to `~/.dzdk` directory
-   - Check file permissions for photo uploads
-   - Verify download directory permissions
-
-4. **Command Not Found**
-   - Ensure virtual environment is activated
-   - Verify CLI installation (`pip list | grep dzdk`)
-   - Check PATH environment variable
-
-5. **Upload Failures**
-   - Verify file exists and is readable
-   - Check file size (10MB limit)
-   - Ensure valid file format
-
-6. **Batch Operation Issues**
-   - Check available disk space
-   - Verify file permissions
-   - Ensure valid file formats
-   - Check network stability
-
-7. **Export Problems**
-   - Verify write permissions
-   - Check available disk space
-   - Ensure valid file paths
-   - Verify data format
-
-### Debugging Tips
-
-1. Use `--verbose` flag for detailed error messages
-2. Check the API response format with `curl`
-3. Monitor network requests with `--debug` flag
-4. Review the config file for correct settings
-5. Check log files for detailed error information
-
----
-
 ## Development
-
-### Project Structure
-```
-dzdk-cli/
-├── dzdk/
-│   ├── __init__.py
-│   └── cli.py
-├── tests/
-│   └── test_cli.py
-├── README.md
-├── requirements.txt
-└── setup.py
-```
 
 ### Adding New Features
 1. Follow the existing code structure
@@ -532,5 +467,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions or support, please contact:
-- Email: support@dzaleka.com
+- Email: contact@mail.dzaleka.com
 - Website: https://services.dzaleka.com 
