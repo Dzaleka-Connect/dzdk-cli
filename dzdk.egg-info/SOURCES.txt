@@ -1,0 +1,11 @@
+LICENSE
+README.md
+setup.py
+dzdk/__init__.py
+dzdk/cli.py
+dzdk.egg-info/PKG-INFO
+dzdk.egg-info/SOURCES.txt
+dzdk.egg-info/dependency_links.txt
+dzdk.egg-info/entry_points.txt
+dzdk.egg-info/requires.txt
+dzdk.egg-info/top_level.txt

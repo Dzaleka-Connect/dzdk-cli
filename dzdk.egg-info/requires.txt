@@ -1,0 +1,7 @@
+click
+requests
+rich
+pyyaml
+pandas
+tabulate
+prompt_toolkit

@@ -1,0 +1,572 @@
+Metadata-Version: 2.4
+Name: dzdk
+Version: 0.1.0
+Summary: A CLI tool for interacting with the Dzaleka Digital Heritage API
+Home-page: https://services.dzaleka.com
+Author: Dzaleka Digital Heritage
+Author-email: bakari@mail.dzaleka.com
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: click
+Requires-Dist: requests
+Requires-Dist: rich
+Requires-Dist: pyyaml
+Requires-Dist: pandas
+Requires-Dist: tabulate
+Requires-Dist: prompt_toolkit
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# dzdk - Dzaleka Digital Heritage CLI
+
+A command-line interface for interacting with the Dzaleka Digital Heritage API, providing rich, colorized output and comprehensive access to the camp's digital resources.
+
+---
+
+## Features
+- **Services Management**: List and view details of all available services in the camp, including contact information and locations.
+- **Event Management**: Browse upcoming and past events, with detailed information about registration, dates, and locations.
+- **Photo Archive**: Upload and browse photos from the camp, with support for metadata and descriptions.
+- **Population Statistics**: Access detailed demographic data, including population trends, nationalities, and demographics.
+- **Resource Library**: Download and manage digital resources, including documents, reports, and media files.
+- **API Health Monitoring**: Comprehensive health checks for all API endpoints with detailed response analysis.
+- **Rich Terminal Output**: Beautiful, colorized tables and panels for easy data visualization.
+- **Configurable Settings**: Customize API URL and timeout settings to match your environment.
+- **Batch Operations**: Download multiple resources or upload multiple photos in batch.
+- **Data Export**: Export data to CSV format or generate detailed markdown reports.
+- **Search Functionality**: Search across all resources with filtering and relevance sorting.
+- **Interactive Shell**: Command-line interface with history, tab completion, and command suggestions.
+
+---
+
+## Installation
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/dzdk-cli.git
+cd dzdk-cli
+```
+
+### 2. Create and Activate a Virtual Environment
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Install the CLI in Editable Mode
+```bash
+pip install -e .
+```
+
+---
+
+## Configuration
+
+The CLI stores its configuration in `~/.dzdk/config.yaml`. You can modify these settings:
+
+- **API URL**: Base URL for the API (default: https://services.dzaleka.com/api)
+- **Timeout**: Request timeout in seconds (default: 30)
+
+### Update Configuration
+```bash
+# Set custom API URL
+dzdk config --url "https://services.dzaleka.com/api"
+
+# Set custom timeout
+dzdk config --timeout 30
+
+# Update both settings
+dzdk config --url "https://services.dzaleka.com/api" --timeout 30
+```
+
+### Configuration
+Show and update CLI configuration settings:
+```bash
+# Show current configuration
+dzdk show_config
+
+# Interactive configuration mode
+dzdk config --interactive
+
+# Set API URL
+dzdk config --url "https://services.dzaleka.com/api"
+
+# Set request timeout
+dzdk config --timeout 30
+```
+
+You can also update both settings at once:
+```bash
+dzdk config --url "https://services.dzaleka.com/api" --timeout 30
+```
+
+This will update the configuration file at `~/.config/dzdk/config.yaml`.
+
+---
+
+## Command Reference
+
+### Health Check
+Check the health of all API endpoints with detailed response analysis:
+```bash
+dzdk health
+```
+This command provides:
+- Response status codes
+- Response times
+- Response types (JSON/Non-JSON)
+- Error messages if any
+
+### Services
+List all available services with detailed information:
+```bash
+# Basic list (12 items per page)
+dzdk services list
+
+# Navigate to specific page
+dzdk services list --page 2
+
+# Search for specific services
+dzdk services list --search "health"
+
+# Filter by category
+dzdk services list --category "medical"
+
+# Filter by status
+dzdk services list --status active
+
+# Sort results
+dzdk services list --sort-by category --sort-order desc
+
+# Combine filters with pagination
+dzdk services list --search "clinic" --category "medical" --status active --page 1
+```
+
+Service details include:
+- Service title and description
+- Category and status
+- Contact information (email, phone)
+- Website information
+- Status indicators (active/inactive/unknown)
+- Total count of matching services
+- Active filters display
+- Page navigation (12 items per page)
+
+Search and Filter Options:
+- **Search**: Search across title, description, and category
+- **Category**: Filter by specific service category
+- **Status**: Filter by service status (active/inactive/unknown)
+- **Sort By**: Sort results by title, category, or status
+- **Sort Order**: Choose ascending or descending order
+
+Get information about a specific service:
+```bash
+dzdk services get --id <service_id_or_slug>
+```
+Service details include:
+- Service title and description
+- Category and status
+- Location details (address, city)
+- Contact information (email, phone)
+- Operating hours
+- Additional metadata
+
+### Events
+List all events with key information:
+```bash
+# Basic list (12 items per page)
+dzdk events list
+
+# Navigate to specific page
+dzdk events list --page 2
+
+# Search and filter with pagination
+dzdk events list --search "workshop" --category "education" --page 1
+
+# Sort with pagination
+dzdk events list --sort-by date --sort-order desc --page 1
+```
+
+Get detailed information about a specific event:
+```bash
+dzdk events get --id <event_id_or_slug>
+```
+Event details include:
+- Title and description
+- Date and time
+- Location
+- Registration information
+- Contact details
+- Tags and categories
+
+### Photos
+List all available photos:
+```bash
+# Basic list (12 items per page)
+dzdk photos list
+
+# Navigate to specific page
+dzdk photos list --page 2
+
+# Search and filter with pagination
+dzdk photos list --search "camp" --category "events" --page 1
+
+# Sort with pagination
+dzdk photos list --sort-by date --sort-order desc --page 1
+```
+
+Get information about a specific photo:
+```bash
+dzdk photos get --id <photo_id_or_slug>
+```
+Photo details include:
+- Title and description
+- Date taken
+- Photographer information
+- Location
+- Tags and categories
+- Image metadata (size, format)
+- Download URL
+
+Upload a photo to the archive:
+```bash
+dzdk photos upload --file path/to/image.jpg --title "Photo Title" --description "Optional description"
+```
+
+Edit photo metadata:
+```bash
+dzdk photos edit --id <photo_id> --title "New Title" --description "New Description" --tags "tag1,tag2" --location "New Location" --date "2024-03-20"
+```
+
+View detailed photo metadata:
+```bash
+dzdk photos metadata --id <photo_id>
+```
+
+### Photo Albums
+Create a new album:
+```bash
+dzdk photos album create --name "My Album" --description "Album Description" --tags "tag1,tag2"
+```
+
+Add photos to an album:
+```bash
+dzdk photos album add --album-id <album_id> --photo-ids "photo1,photo2,photo3"
+```
+
+List all albums:
+```bash
+dzdk photos album list
+```
+
+Features:
+- Album creation and management
+- Photo organization
+- Tag-based categorization
+- Rich metadata display
+- Batch photo operations
+- Technical metadata viewing
+- Location and date tracking
+
+### Population
+Get comprehensive population statistics:
+```bash
+dzdk population stats
+```
+Get specific demographic information:
+```bash
+dzdk population get --category <demographic_category>
+```
+Available categories:
+- age_groups
+- nationalities
+- gender
+- new_arrivals
+- historical_trends
+
+Statistics include:
+- Total population
+- New arrivals
+- Demographics breakdown
+- Nationality distribution
+- Historical trends
+
+### Resources
+List all available resources:
+```bash
+# Basic list (12 items per page)
+dzdk resources list
+
+# Navigate to specific page
+dzdk resources list --page 2
+
+# Search and filter with pagination
+dzdk resources list --search "report" --category "research" --page 1
+
+# Sort with pagination
+dzdk resources list --sort-by date --sort-order desc --page 1
+```
+
+Get detailed information about a specific resource:
+```bash
+dzdk resources get --id <resource_id_or_slug>
+```
+Resource information includes:
+- Title and description
+- Author and date
+- File type and size
+- Available languages
+- Download URLs
+- Version history
+- Related resources
+
+Download a resource:
+```bash
+dzdk resources fetch --id <resource_id_or_slug> --output filename.pdf
+```
+
+### Search
+Search across all resources with filtering and relevance sorting:
+```bash
+# Search across all content types
+dzdk search --query "education"
+
+# Search only in services
+dzdk search --query "health" --type services
+
+# Search with a custom result limit
+dzdk search --query "event" --limit 20
+```
+Features:
+- Cross-resource search
+- Type filtering
+- Relevance sorting
+- Result limiting
+- Rich output formatting
+
+### Batch Operations
+Download multiple resources or photos in batch:
+```bash
+# Download multiple resources
+dzdk batch download --type resources --ids "id1,id2,id3" --output-dir downloads
+
+# Download multiple photos
+dzdk batch download --type photos --ids "photo1,photo2" --output-dir photos
+```
+Features:
+- Parallel downloads
+- Progress tracking
+- Error handling
+- Automatic directory creation
+
+Upload multiple photos from a directory:
+```bash
+# Upload all photos from a directory
+dzdk batch upload --type photos --directory ./my_photos
+```
+Features:
+- Batch processing
+- File validation
+- Progress tracking
+- Error handling
+
+### Export
+Export data to CSV format:
+```bash
+# Export services to CSV
+dzdk export csv --type services --output services.csv
+
+# Export population data to CSV
+dzdk export csv --type population --output population.csv
+```
+Features:
+- Flattened data structure
+- Preserved metadata
+- Proper CSV formatting
+
+Generate detailed markdown reports:
+```bash
+# Generate a services report
+dzdk export report --type services --output services_report.md
+
+# Generate a population report
+dzdk export report --type population --output population_report.md
+```
+Features:
+- Comprehensive summaries
+- Detailed item information
+- Formatted markdown output
+- Timestamps and metadata
+
+### Interactive Shell
+Start an interactive shell session with command history and tab completion:
+```bash
+dzdk shell
+```
+
+Features:
+- Command history persistence
+- Tab completion for commands
+- Command suggestions based on history
+- Rich output formatting
+- Built-in help system
+- Screen clearing
+- Easy command execution
+
+Example shell session:
+```bash
+(dzdk) help
+(dzdk) services list
+(dzdk) photos upload --file photo.jpg --title "My Photo"
+(dzdk) search --query "education"
+(dzdk) clear
+(dzdk) exit
+```
+
+Shell Commands:
+- `help [command]`: Show help information
+- `clear`: Clear the terminal screen
+- `exit`: Exit the shell
+- All regular CLI commands are available
+
+---
+
+## Output Formatting
+
+The CLI uses the Rich library to provide beautiful, colorized output:
+
+- **Tables**: Organized data presentation with color-coded columns
+- **Panels**: Detailed information in bordered boxes
+- **Progress Bars**: Visual feedback for long-running operations
+- **Status Indicators**: Color-coded success/error messages
+- **Visualizations**: Bar charts and graphs for data representation
+- **Search Results**: Formatted panels with type-specific details
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Connection Issues**
+   - Check your internet connection
+   - Verify the API URL in your config
+   - Ensure the API service is running
+   - Try increasing the timeout if you have a slow connection
+
+2. **Empty or Invalid Responses**
+   - Run `dzdk health` to check API status
+   - Verify the API endpoint is returning valid JSON
+   - Check for any error messages in the response
+
+3. **Permission Issues**
+   - Ensure write access to `~/.dzdk` directory
+   - Check file permissions for photo uploads
+   - Verify download directory permissions
+
+4. **Command Not Found**
+   - Ensure virtual environment is activated
+   - Verify CLI installation (`pip list | grep dzdk`)
+   - Check PATH environment variable
+
+5. **Upload Failures**
+   - Verify file exists and is readable
+   - Check file size (10MB limit)
+   - Ensure valid file format
+
+6. **Batch Operation Issues**
+   - Check available disk space
+   - Verify file permissions
+   - Ensure valid file formats
+   - Check network stability
+
+7. **Export Problems**
+   - Verify write permissions
+   - Check available disk space
+   - Ensure valid file paths
+   - Verify data format
+
+### Debugging Tips
+
+1. Use `--verbose` flag for detailed error messages
+2. Check the API response format with `curl`
+3. Monitor network requests with `--debug` flag
+4. Review the config file for correct settings
+5. Check log files for detailed error information
+
+---
+
+## Development
+
+### Project Structure
+```
+dzdk-cli/
+├── dzdk/
+│   ├── __init__.py
+│   └── cli.py
+├── tests/
+│   └── test_cli.py
+├── README.md
+├── requirements.txt
+└── setup.py
+```
+
+### Adding New Features
+1. Follow the existing code structure
+2. Add proper error handling
+3. Include progress indicators for long operations
+4. Add appropriate documentation
+5. Update the README with new commands
+
+### Testing
+1. Run the test suite: `pytest`
+2. Test new features thoroughly
+3. Verify error handling
+4. Check output formatting
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Update documentation
+6. Submit a pull request
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## Contact
+
+For questions or support, please contact:
+- Email: support@dzaleka.com
+- Website: https://services.dzaleka.com 
