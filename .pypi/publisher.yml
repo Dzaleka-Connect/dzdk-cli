@@ -1,0 +1,6 @@
+version: 1
+publishers:
+  - name: dzdk
+    repository: Dzaleka-Connect/dzdk-cli
+    workflow: .github/workflows/python-publish.yml
+    environment: pypi
