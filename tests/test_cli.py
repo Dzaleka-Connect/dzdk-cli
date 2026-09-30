@@ -1,387 +1,340 @@
-"""Test cases for DZDK CLI commands."""
-import pytest
-from click.testing import CliRunner
-from dzdk import cli
-import os
-from pathlib import Path
-import yaml
+"""CLI commands against a mocked API."""
+import csv
 import json
-from unittest.mock import Mock, patch, mock_open, MagicMock
+import re
+
+import pytest
+import requests
+import responses
+import yaml
+from click.testing import CliRunner
+
+from dzdk import cli
+from tests.conftest import API
+
 
 @pytest.fixture
-def runner():
-    """Create a CLI runner fixture."""
-    return CliRunner()
-
-@pytest.fixture
-def mock_config_file(tmp_path):
-    """Create a temporary config file for testing."""
-    config = {
-        'api_url': 'https://test-api.com/api',
-        'timeout': 30
-    }
-    config_file = tmp_path / 'config.yaml'
-    with open(config_file, 'w') as f:
-        yaml.dump(config, f)
-    return config_file
-
-@pytest.fixture
-def mock_env(monkeypatch, tmp_path):
-    """Set up test environment variables."""
-    monkeypatch.setenv('DZDK_CONFIG_DIR', str(tmp_path))
-    return tmp_path
-
-@pytest.fixture
-def mock_requests(mocker):
-    """Mock requests for API calls."""
-    mock = mocker.patch('requests.get')
-    
-    # Mock response for health check
-    health_response = Mock()
-    health_response.status_code = 200
-    health_response.json.return_value = {
-        'status': 'success',
-        'data': {
-            'health': 'ok',
-            'endpoints': {
-                'services': {'status': 'OK', 'response_time': 0.1},
-                'events': {'status': 'OK', 'response_time': 0.1},
-                'photos': {'status': 'OK', 'response_time': 0.1},
-                'resources': {'status': 'OK', 'response_time': 0.1}
-            }
-        }
-    }
-    
-    # Mock response for services list
-    services_response = Mock()
-    services_response.status_code = 200
-    services_response.json.return_value = {
-        'status': 'success',
-        'data': {
-            'services': [
-                {
-                    'id': '1',
-                    'title': 'Test Service',
-                    'category': 'Test Category',
-                    'status': 'active',
-                    'contact': {
-                        'email': 'test@example.com',
-                        'phone': '+1234567890'
-                    },
-                    'socialMedia': {
-                        'website': 'https://test.com'
-                    }
-                }
-            ]
-        }
-    }
-    
-    # Mock response for events list
-    events_response = Mock()
-    events_response.status_code = 200
-    events_response.json.return_value = {
-        'status': 'success',
-        'data': {
-            'events': [
-                {
-                    'id': '1',
-                    'title': 'Test Event',
-                    'date': '2024-03-20T10:00:00Z',
-                    'status': 'active',
-                    'location': 'Test Location',
-                    'category': 'Test Category'
-                }
-            ]
-        }
-    }
-    
-    # Mock response for photos list
-    photos_response = Mock()
-    photos_response.status_code = 200
-    photos_response.json.return_value = {
-        'status': 'success',
-        'data': {
-            'photos': [
-                {
-                    'id': '1',
-                    'title': 'Test Photo',
-                    'url': 'http://example.com/photo.jpg',
-                    'date': '2024-03-20T10:00:00Z',
-                    'photographer': {'name': 'Test Photographer'},
-                    'location': 'Test Location',
-                    'tags': ['test', 'photo']
-                }
-            ]
-        }
-    }
-    
-    # Mock response for resources list
-    resources_response = Mock()
-    resources_response.status_code = 200
-    resources_response.json.return_value = {
-        'status': 'success',
-        'data': {
-            'resources': [
-                {
-                    'id': '1',
-                    'title': 'Test Resource',
-                    'fileType': 'pdf',
-                    'date': '2024-03-20T10:00:00Z',
-                    'author': 'Test Author',
-                    'category': 'Test Category'
-                }
-            ]
-        }
-    }
-    
-    # Configure mock to return different responses based on URL
-    def mock_get(url, *args, **kwargs):
-        if 'health' in url:
-            return health_response
-        elif 'services' in url:
-            return services_response
-        elif 'events' in url:
-            return events_response
-        elif 'photos' in url:
-            return photos_response
-        elif 'resources' in url:
-            return resources_response
-        return Mock(status_code=404)
-    
-    mock.side_effect = mock_get
-    return mock
-
-def test_health_command(runner, mock_requests):
-    """Test the health command."""
-    result = runner.invoke(cli, ['health'])
-    # The new CLI prints a table and a summary line
-    assert result.exit_code == 0 or result.exit_code == 1
-    assert 'API Health Check' in result.output
-    assert 'All endpoints are healthy' in result.output or 'Some endpoints are not responding' in result.output
-
-def test_services_list_command(runner, mock_requests):
-    """Test the services list command."""
-    result = runner.invoke(cli, ['services', 'list'])
-    assert result.exit_code == 0
-    assert 'Test Service' in result.output
-    assert 'Test Category' in result.output
-
-def test_events_list_command(runner, mock_requests):
-    """Test the events list command."""
-    result = runner.invoke(cli, ['events', 'list'])
-    assert result.exit_code == 0
-    assert 'Test Event' in result.output
-    assert 'Test Location' in result.output
-
-def test_photos_list_command(runner, mock_requests):
-    """Test the photos list command."""
-    result = runner.invoke(cli, ['photos', 'list'])
-    assert result.exit_code == 0
-    assert 'Test Photo' in result.output
-    assert 'Test Photographer' in result.output
-
-def test_resources_list_command(runner, mock_requests):
-    """Test the resources list command."""
-    result = runner.invoke(cli, ['resources', 'list'])
-    assert result.exit_code == 0
-    assert 'Test Resource' in result.output
-    assert 'Test Author' in result.output
-
-def test_config_command_interactive(runner, mock_env):
-    """Test interactive configuration mode."""
-    with patch('click.prompt', side_effect=['https://new-api.com', '45']):
-        result = runner.invoke(cli, ['config', '--interactive'])
-        assert result.exit_code == 0
-        assert 'Configuration has been updated successfully' in result.output
-
-def test_config_command_direct(runner, mock_env):
-    """Test direct configuration with parameters."""
-    result = runner.invoke(cli, ['config', '--url', 'https://direct-api.com', '--timeout', '60'])
-    assert result.exit_code == 0
-    assert 'Configuration updated successfully' in result.output
-
-def test_show_config_command(runner, mock_env, mock_config_file):
-    """Test show-config command."""
-    with patch('dzdk.load_config') as mock_load:
-        mock_load.return_value = {
-            'api_url': 'https://test-api.com/api',
-            'timeout': 30
-        }
-        result = runner.invoke(cli, ['show-config'])
-        assert result.exit_code == 0
-        assert 'Current Configuration' in result.output
-        assert 'https://test-api.com/api' in result.output
-
-def test_show_config_alias(runner, mock_env, mock_config_file):
-    """Test show_config alias command."""
-    with patch('dzdk.load_config') as mock_load:
-        mock_load.return_value = {
-            'api_url': 'https://test-api.com/api',
-            'timeout': 30
-        }
-        result = runner.invoke(cli, ['show-config'])
-        assert result.exit_code == 0
-        assert 'Current Configuration' in result.output
-        assert 'https://test-api.com/api' in result.output
-
-def test_photo_upload_command(tmp_path):
-    """Test photo upload command"""
+def run():
     runner = CliRunner()
-    # Create a real temp file so Click's file check passes
-    test_image = tmp_path / 'test_image.jpg'
-    test_image.write_bytes(b'fake image data')
-    with patch('os.path.getsize', return_value=1024):
-        with patch('requests.post') as mock_post:
-            # Mock successful response
-            mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = {
-                'id': '123',
-                'title': 'Test Photo',
-                'url': 'https://example.com/photo.jpg'
-            }
-            result = runner.invoke(cli, [
-                'photos', 'upload',
-                '--file', str(test_image),
-                '--title', 'Test Photo',
-                '--description', 'Test Description'
-            ])
-            assert result.exit_code == 0
-            assert 'Photo uploaded successfully' in result.output
 
-def test_fetch_resource(runner, tmp_path):
-    """Test resource download functionality."""
-    with patch('requests.get') as mock_get, \
-         patch('requests.head') as mock_head:
-        # Mock the initial resource details request
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'status': 'success',
-            'data': {
-                'resource': {
-                    'downloadUrl': 'https://test.com/resource.pdf'
-                }
-            }
-        }
-        
-        # Mock the HEAD request for file size
-        mock_head.return_value.headers = {'content-length': '1000'}
-        
-        # Mock the actual download
-        mock_get.return_value.iter_content.return_value = [b'chunk1', b'chunk2']
-        
-        output_file = tmp_path / 'downloaded.pdf'
-        result = runner.invoke(cli, [
-            'resources', 'fetch',
-            '--id', '123',
-            '--output', str(output_file)
-        ])
+    def invoke(*args, **kwargs):
+        return runner.invoke(cli, list(args), catch_exceptions=False, **kwargs)
+
+    return invoke
+
+
+def test_welcome_and_help(run):
+    result = run()
+    assert result.exit_code == 0
+    assert "dzdk tui" in result.output
+    assert "get-help-now" in result.output
+    assert "Usage:" in result.output
+
+
+def test_version(run):
+    assert "0.2.0" in run("--version").output
+
+
+# ------------------------------------------------------------ collections
+
+
+def test_services_list(run, api):
+    result = run("services", "list")
+    assert result.exit_code == 0
+    assert "Inua Advocacy" in result.output
+    assert "Dzaleka Health Centre" in result.output
+    assert "2 services" in result.output
+
+
+def test_services_list_filters(run, api):
+    result = run("services", "list", "--search", "legal")
+    assert "Inua Advocacy" in result.output
+    assert "Health Centre" not in result.output
+    result = run("services", "list", "--status", "inactive")
+    assert "Health Centre" in result.output and "Inua" not in result.output
+    result = run("services", "list", "--category", "health")
+    assert "Health Centre" in result.output and "Inua" not in result.output
+
+
+def test_services_list_json_and_categories(run, api):
+    data = json.loads(run("services", "list", "--json").output)
+    assert [s["id"] for s in data] == ["dzaleka-health-centre", "inua-advocacy"]
+    assert run("services", "list", "--categories").output.split() == ["Advocacy", "Health"]
+
+
+def test_services_list_no_matches(run, api):
+    result = run("services", "list", "--search", "zzz")
+    assert "No services match" in result.output
+
+
+def test_services_get(run, api):
+    for args in (("--id", "inua-advocacy"), ("inua-advocacy",)):
+        result = run("services", "get", *args)
         assert result.exit_code == 0
-        assert 'Resource successfully saved' in result.output
+        assert "Inua Advocacy" in result.output
+        assert "info@inua.org" in result.output
+        assert "Verified" in result.output
 
-def test_batch_download(runner, tmp_path):
-    """Test batch download functionality."""
-    with patch('requests.get') as mock_get:
-        # Mock the initial resources list request
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'status': 'success',
-            'data': {
-                'resources': [{
-                    'id': '123',
-                    'title': 'Test Resource',
-                    'downloadUrl': 'https://test.com/resource.pdf',
-                    'fileType': 'pdf'
-                }]
-            }
-        }
-        
-        # Mock the actual download
-        mock_get.return_value.iter_content.return_value = [b'chunk1', b'chunk2']
-        
-        output_dir = tmp_path / 'downloads'
-        result = runner.invoke(cli, [
-            'batch', 'download',
-            '--type', 'resources',
-            '--ids', '123',
-            '--output-dir', str(output_dir)
-        ])
-        assert result.exit_code == 0
-        assert 'Download Complete' in result.output
 
-def test_error_handling(runner):
-    """Test error handling in various commands."""
-    with patch('requests.get') as mock_get:
-        mock_get.side_effect = Exception('Network error')
-        result = runner.invoke(cli, ['health'])
-        assert result.exit_code == 1
-        assert 'Network error' in result.output
-
-def test_invalid_config(runner, mock_env):
-    """Test handling of invalid configuration."""
-    with patch('yaml.safe_load', side_effect=yaml.YAMLError('Invalid YAML')):
-        result = runner.invoke(cli, ['show-config'])
-        assert result.exit_code == 1
-        assert 'Invalid YAML' in result.output
-
-def test_file_size_limit(runner, tmp_path):
-    """Test file size limit for uploads."""
-    # Create a large test file
-    large_file = tmp_path / 'large.jpg'
-    large_file.write_bytes(b'x' * (11 * 1024 * 1024))  # 11MB
-    
-    result = runner.invoke(cli, [
-        'photos', 'upload',
-        '--file', str(large_file),
-        '--title', 'Large Photo'
-    ])
+def test_services_get_not_found(run, api):
+    result = run("services", "get", "--id", "nope")
     assert result.exit_code == 1
-    assert 'File size exceeds 10MB limit' in result.output
+    assert "No services item with id 'nope'" in result.output
+    assert "dzdk services list" in result.output
 
-def test_photo_upload_file_not_found():
-    """Test photo upload with non-existent file"""
-    runner = CliRunner()
-    
-    result = runner.invoke(cli, [
-        'photos', 'upload',
-        '--file', 'nonexistent.jpg',
-        '--title', 'Test Photo'
-    ])
-    
-    assert result.exit_code == 2  # Click uses 2 for command errors
-    assert "Invalid value for '--file': Path 'nonexistent.jpg' does not exist." in result.output
 
-def test_photo_upload_file_too_large():
-    """Test photo upload with file exceeding size limit"""
-    runner = CliRunner()
-    
-    # Simulate file exists, but Click will still check size if using type=click.File
-    # So we patch getsize to a large value and patch open to succeed
-    with patch('os.path.exists', return_value=True):
-        with patch('os.path.getsize', return_value=11 * 1024 * 1024):  # 11MB file
-            with patch('builtins.open', mock_open(read_data=b'fake image data')):
-                result = runner.invoke(cli, [
-                    'photos', 'upload',
-                    '--file', 'large_image.jpg',
-                    '--title', 'Test Photo'
-                ])
-                assert result.exit_code == 2  # Click uses 2 for command errors
-                # Click will still check for file existence, but not size, so this may need to be handled in the CLI code
-                # If not, this test may need to be removed or adjusted
-                # For now, check for the file existence error
-                assert "Invalid value for '--file': Path 'large_image.jpg' does not exist." in result.output
+@pytest.mark.parametrize("name, expected", [
+    ("events", "Faith and Refugees"),
+    ("jobs", "Project Associate"),
+    ("news", "Introducing the"),
+    ("resources", "Annual Report"),
+    ("photos", "Cardboard Collection"),
+])
+def test_other_collections(run, api, name, expected):
+    result = run(name, "list")
+    assert result.exit_code == 0
+    assert expected in result.output
 
-def test_photo_upload_api_error(tmp_path):
-    """Test photo upload with API error"""
-    runner = CliRunner()
-    test_image = tmp_path / 'test_image.jpg'
-    test_image.write_bytes(b'fake image data')
-    with patch('os.path.getsize', return_value=1024):
-        with patch('requests.post') as mock_post:
-            mock_post.side_effect = Exception("API Error")
-            result = runner.invoke(cli, [
-                'photos', 'upload',
-                '--file', str(test_image),
-                '--title', 'Test Photo'
-            ])
-            assert result.exit_code == 1
-            assert 'Upload failed' in result.output 
+
+def test_job_detail(run, api):
+    result = run("jobs", "get", "project-associate")
+    assert "UNHCR Malawi" in result.output
+    assert "Protection" in result.output
+    assert "jobs@unhcr.org" in result.output
+
+
+def test_browse(run, api):
+    assert "courses" in run("browse").output
+    result = run("browse", "courses")
+    assert "Python 101" in result.output
+    assert run("browse", "not-a-collection").exit_code == 2
+
+
+# ----------------------------------------------------------------- search
+
+
+def test_search_uses_search_endpoint(run, api):
+    result = run("search", "legal", "--type", "services")
+    assert result.exit_code == 0
+    assert "Inua Advocacy" in result.output
+    call = [c for c in api.calls if "/search" in c.request.url][0]
+    assert "q=legal" in call.request.url and "collections=services" in call.request.url
+
+
+def test_search_legacy_query_option(run, api):
+    result = run("search", "--query", "legal")
+    assert "2 results" in result.output
+
+
+def test_search_requires_query(run, api):
+    assert run("search").exit_code == 2
+
+
+# ----------------------------------------------------------- encyclopedia
+
+
+def test_wiki_get(run, api):
+    result = run("wiki", "get", "water-and-sanitation")
+    assert result.exit_code == 0
+    assert "Water and sanitation" in result.output
+    assert "Boreholes" in result.output
+    assert "UNHCR report" in result.output
+
+
+def test_wiki_alias_and_list(run, api):
+    result = run("encyclopedia", "list")
+    assert "Water and sanitation" in result.output
+    assert "1 entries" in result.output
+
+
+def test_wiki_missing_suggests(run, api):
+    result = run("wiki", "get", "missing")
+    assert result.exit_code == 1
+    assert "Did you mean" in result.output
+    assert "water-and-sanitation" in result.output
+
+
+def test_wiki_categories(run, api):
+    assert "Infrastructure" in run("wiki", "categories").output
+
+
+# ------------------------------------------------------------- dashboards
+
+
+def test_population_stats(run, api):
+    result = run("population", "stats")
+    assert "55,425" in result.output
+    assert "Burundi" in result.output
+    assert "2024" in result.output
+
+
+def test_alerts(run, api):
+    result = run("alerts")
+    assert "Cholera outbreak" in result.output
+    assert "Strong winds" in result.output
+    assert "get-help-now" in result.output
+
+
+def test_weather(run, api):
+    assert "Partly Cloudy" in run("weather").output
+
+
+def test_stats(run, api):
+    assert "Category Distribution" in run("stats", "services").output
+    result = run("stats", "overview")
+    assert "UNHCR Malawi funding" in result.output
+
+
+def test_status_and_mcp(run, api):
+    assert "1.0.0" in run("status").output
+    result = run("mcp")
+    assert "search_dzaleka" in result.output
+    assert "claude mcp add --transport http dzaleka" in result.output
+
+
+# ----------------------------------------------------------------- health
+
+
+def test_health_ok(run, api):
+    result = run("health")
+    assert result.exit_code == 0
+    assert "API Health Check" in result.output
+    assert "All endpoints are healthy" in result.output
+
+
+def test_health_failure(run):
+    with responses.RequestsMock() as mock:
+        mock.add(responses.GET, re.compile(f"{API}/.*"),
+                 body=requests.ConnectionError("Network error"))
+        result = run("health")
+    assert result.exit_code == 1
+    assert "Some endpoints are not responding" in result.output
+
+
+# ------------------------------------------------------------------ errors
+
+
+def test_problem_json_error_is_readable(run):
+    with responses.RequestsMock() as mock:
+        mock.add(responses.GET, f"{API}/services", status=429, json={
+            "title": "Too many requests", "code": "rate_limited",
+            "detail": "Slow down.", "resolution": "Wait 30 seconds."},
+            headers={"Retry-After": "0"})
+        result = run("services", "list")
+    assert result.exit_code == 1
+    assert "Too many requests" in result.output
+    assert "Wait 30 seconds." in result.output
+    assert "rate_limited" in result.output
+
+
+def test_offline_fallback_uses_stale_cache(run, api, config_home):
+    run("config", "--cache-ttl", "1")
+    assert "Inua Advocacy" in run("services", "list").output
+    # Age the cache, then take the network away.
+    for path in (config_home / "cache").glob("*.json"):
+        entry = json.loads(path.read_text())
+        entry["t"] -= 3600
+        path.write_text(json.dumps(entry))
+    api.replace(responses.GET, f"{API}/services", body=requests.ConnectionError("down"))
+    result = run("services", "list")
+    assert "Inua Advocacy" in result.output
+    assert "Offline" in result.output
+
+
+def test_no_cache_flag_bypasses_cache(run, api):
+    run("services", "list")
+    run("--no-cache", "services", "list")
+    assert len([c for c in api.calls if c.request.url.endswith("/services")]) == 2
+
+
+# ----------------------------------------------------------------- config
+
+
+def test_config_direct(run, config_home):
+    result = run("config", "--url", "direct-api.com", "--timeout", "60")
+    assert "Configuration updated successfully" in result.output
+    saved = yaml.safe_load((config_home / "config.yaml").read_text())
+    assert saved["api_url"] == "https://direct-api.com/api"
+    assert saved["timeout"] == 60
+
+
+def test_config_interactive(run, config_home):
+    result = run("config", "--interactive", input="https://new-api.com\n45\n")
+    assert "Configuration has been updated successfully" in result.output
+    assert yaml.safe_load((config_home / "config.yaml").read_text())["timeout"] == 45
+
+
+def test_show_config(run):
+    result = run("show-config")
+    assert "Current Configuration" in result.output
+    assert "services.dzaleka.com/api" in result.output
+    assert "Current Configuration" in run("show_config").output
+
+
+def test_invalid_config(run, config_home):
+    config_home.mkdir(parents=True)
+    (config_home / "config.yaml").write_text("api_url: [unclosed")
+    result = CliRunner().invoke(cli, ["show-config"])
+    assert result.exit_code == 1
+    assert "Error reading" in result.output
+
+
+def test_clear_cache(run, api):
+    run("services", "list")
+    assert "Removed 1 cached" in run("config", "--clear-cache").output
+
+
+# ----------------------------------------------------------- files/export
+
+
+def test_fetch_resource(run, api, tmp_path):
+    out = tmp_path / "report.pdf"
+    result = run("resources", "fetch", "--id", "annual-report", "--output", str(out))
+    assert result.exit_code == 0
+    assert "Resource successfully saved" in result.output
+    assert out.read_bytes() == b"%PDF-1.4 test"
+
+
+def test_batch_download(run, api, tmp_path):
+    result = run("batch", "download", "--type", "photos", "--ids", "cardboard,missing",
+                 "--output-dir", str(tmp_path / "dl"))
+    assert "Download Complete" in result.output
+    assert "1 of 2 files" in result.output
+    assert (tmp_path / "dl" / "Cardboard Collection.jpg").read_bytes() == b"JPEGDATA"
+
+
+def test_export_csv(run, api, tmp_path):
+    out = tmp_path / "services.csv"
+    result = run("export", "csv", "--type", "services", "--output", str(out))
+    assert "2 rows exported" in result.output
+    rows = list(csv.DictReader(out.open()))
+    assert rows[0]["contact_email"] == "info@inua.org"
+    assert rows[0]["location_coordinates_lat"] == "-13.66"
+
+
+def test_export_report_and_json(run, api, tmp_path):
+    report = tmp_path / "jobs.md"
+    run("export", "report", "--type", "jobs", "--output", str(report))
+    assert "## Project Associate" in report.read_text()
+    out = tmp_path / "wiki.json"
+    run("export", "json", "--type", "encyclopedia", "--output", str(out))
+    assert json.loads(out.read_text())[0]["id"] == "water-and-sanitation"
+
+
+def test_export_all_single_request(run, api, tmp_path):
+    out = tmp_path / "all.json"
+    result = run("export", "all", "-o", str(out), "--collections", "services,jobs")
+    assert "services: 2" in result.output
+    assert set(json.loads(out.read_text())) == {"services", "jobs"}
+    body = json.loads([c for c in api.calls if c.request.url.endswith("/export")][0].request.body)
+    assert body == {"collections": ["services", "jobs"]}
+
+
+def test_chart_list_and_draw(run, api):
+    assert "population-growth" in run("chart", "--list").output
+    result = run("chart", "population-growth", "--width", "60")
+    assert result.exit_code == 0
+    assert "Camp population" in result.output and "60k" in result.output
+    result = run("chart", "-g", "needs", "--width", "60")
+    assert "Service capacity" in result.output and "Aid distribution unrest" in result.output
+    assert run("chart", "nope").exit_code == 2
