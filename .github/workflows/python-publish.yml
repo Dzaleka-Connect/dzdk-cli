@@ -10,6 +10,10 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    # PyPI's trusted publisher for dzdk expects this environment (see .pypi/publisher.yml).
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dzdk
     steps:
     - uses: actions/checkout@v4
     
