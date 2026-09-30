@@ -1,0 +1,19 @@
+# Virtual environments
+venv/
+.venv/
+
+# Python build and cache files
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local files
+.DS_Store
+downloads/

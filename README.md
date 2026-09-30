@@ -1,471 +1,238 @@
-# dzdk - Dzaleka Digital Heritage CLI
+# dzdk
 
-A command-line interface for interacting with the Dzaleka Digital Heritage API, providing rich, colorized output and comprehensive access to the camp's digital resources.
+A terminal client for [Dzaleka Online Services](https://services.dzaleka.com): the
+community directory, news and open-data site for Dzaleka Refugee Camp in Dowa District,
+Malawi.
 
----
+`dzdk` has two parts:
 
-## Features
-- **Services Management**: List and view details of all available services in the camp, including contact information and locations.
-- **Event Management**: Browse upcoming and past events, with detailed information about registration, dates, and locations.
-- **Photo Archive**: Upload and browse photos from the camp, with support for metadata and descriptions.
-- **Population Statistics**: Access detailed demographic data, including population trends, nationalities, and demographics.
-- **Resource Library**: Download and manage digital resources, including documents, reports, and media files.
-- **API Health Monitoring**: Comprehensive health checks for all API endpoints with detailed response analysis.
-- **Rich Terminal Output**: Beautiful, colorized tables and panels for easy data visualization.
-- **Configurable Settings**: Customize API URL and timeout settings to match your environment.
-- **Batch Operations**: Download multiple resources or upload multiple photos in batch.
-- **Data Export**: Export data to CSV format or generate detailed markdown reports.
-- **Search Functionality**: Search across all resources with filtering and relevance sorting.
-- **Interactive Shell**: Command-line interface with history, tab completion, and command suggestions.
+- **A full-screen app** (`dzdk tui`) for browsing services, the Dzaleka Encyclopedia,
+  events, jobs, news, resources and photos, with charts of population, needs, funding,
+  activity and weather. Built with [Textual](https://textual.textualize.io) and
+  [textual-plotext](https://github.com/Textualize/textual-plotext).
+- **Commands** (`dzdk services list`, `dzdk search`, `dzdk chart`, `dzdk export csv`, and
+  more) for quick lookups, scripts and data exports.
 
----
+Both read the public, read-only [Dzaleka Online Services API](https://services.dzaleka.com/api-docs).
+It needs no account or API key.
 
-## Installation
+![The dzdk home screen](docs/images/home.svg)
 
-### 1. Clone the Repository
+## Install
+
+Requires Python 3.9 or later.
+
+```bash
+pip install dzdk
+```
+
+To serve the app in a web browser as well as the terminal, install the `serve` extra:
+
+```bash
+pip install "dzdk[serve]"
+```
+
+From a clone of this repository:
+
 ```bash
 git clone https://github.com/Dzaleka-Connect/dzdk-cli.git
 cd dzdk-cli
+python -m venv venv
+source venv/bin/activate         # Windows: venv\Scripts\activate
+pip install -e ".[dev]"
 ```
 
-### 2. Create and Activate a Virtual Environment
+## The app
+
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+dzdk tui
 ```
 
-### 3. Install Dependencies
+The app is designed for a window of about 140×42 characters. If yours is smaller, `dzdk tui`
+asks the terminal to grow the window (macOS Terminal, iTerm2 and xterm support this) and
+restores the original size when you quit. The layout also adapts to whatever size it gets,
+including when you resize the window while it runs:
+
+- Below 110 columns, lists stack above their details, and the dashboard and charts use one
+  column.
+- On short windows, the header uses a smaller logo.
+- `[` and `]` make the list pane narrower or wider. The width is saved.
+- `z` zooms the focused pane, or a chart, to fill the window. Press it again to return.
+
 ```bash
-pip install -r requirements.txt
+dzdk tui --size 160x48       # grow to a different size
+dzdk tui --no-resize         # never touch the window size
+dzdk config --window-size off
 ```
 
-### 4. Install the CLI in Editable Mode
+| Tab | What it shows |
+|---|---|
+| Home | Population, new arrivals, funding and weather; current alerts; latest news; open jobs |
+| Insights | Charts in five groups: Population, Needs, Directory, Activity, Weather |
+| Services | All listed organisations, filterable by name and category, with contact details and location |
+| Encyclopedia | Sourced reference entries with search as you type; related entries link to each other |
+| Events, Jobs, News, Resources, Photos | Each collection as a sortable, filterable list with a detail pane |
+| Search | One search across every collection, grouped by type |
+
+### Insights
+
+The Insights tab draws charts from the API's open data. They are grouped into sub-tabs, and
+each group loads only when you open it.
+
+| Group | Charts |
+|---|---|
+| Population | Camp population 1994–2024; residents by nationality; women, children and men |
+| Needs | Challenge impact scores; service capacity against demand; UNHCR funding and gap; major incidents timeline |
+| Directory | Services, encyclopedia entries and resources by category |
+| Activity | News per month; events per month; jobs by type |
+| Weather | Temperature and rainfall over the next hours (MET Malawi) |
+
+![Insights tab, Population group](docs/images/insights-population.svg)
+
+![Insights tab, Needs group](docs/images/insights-needs.svg)
+
+The same charts print in an ordinary terminal with `dzdk chart` (see below).
+
+![Services tab](docs/images/services.svg)
+
+### Keys
+
+| Key | Action |
+|---|---|
+| `1`–`9`, `0` | Switch tab (press `Esc` first if the cursor is in a text box) |
+| `/` | Jump to the filter or search box |
+| `Esc` | Leave the text box and return to the list |
+| `↑` `↓` | Move through the list; the detail pane follows |
+| `Enter` | Open the selected result, or move into the details |
+| `s` | Change the sort column (clicking a column header also works) |
+| `z` | Zoom the focused pane or chart to fill the window; press again to restore |
+| `[` `]` | Make the list pane narrower or wider |
+| `Tab` | Move between panes; on Insights, between charts |
+| `o` | Open the current item on services.dzaleka.com |
+| `y` | Copy the current item's link |
+| `r` | Reload, bypassing the cache |
+| `Backspace` | Go back to the previous encyclopedia entry |
+| `Ctrl+P` | Command palette: jump to any loaded item, tab or page by name |
+| `F1` | Help |
+| `q` | Quit |
+
+The app ships with a dark and a light theme (`dzaleka` and `dzaleka-light`) and works with
+every built-in Textual theme. Change it with **Ctrl+P → Change theme**. Your choice is saved.
+
+![Encyclopedia tab](docs/images/encyclopedia.svg)
+
+To run the app in a browser, for example on a shared computer:
+
 ```bash
-pip install -e .
+dzdk serve --port 8000
 ```
 
----
+## Commands
 
-## Configuration
+Run `dzdk` on its own for an overview, or add `--help` to any command.
 
-The CLI stores its configuration in `~/.dzdk/config.yaml`. You can modify these settings:
-
-- **API URL**: Base URL for the API (default: https://services.dzaleka.com/api)
-- **Timeout**: Request timeout in seconds (default: 30)
-
-### Update Configuration
 ```bash
-# Set custom API URL
-dzdk config --url "https://services.dzaleka.com/api"
+# Find things
+dzdk search "legal aid"
+dzdk search water --type encyclopedia --type resources
+dzdk services list --search health
+dzdk services list --category education --page 2
+dzdk jobs list --status open --sort-by deadline
+dzdk services get inua-advocacy
+dzdk services open inua-advocacy          # opens the page in your browser
 
-# Set custom timeout
-dzdk config --timeout 30
+# The encyclopedia
+dzdk wiki search water
+dzdk wiki get dzaleka-refugee-camp
+dzdk wiki list --category People
 
-# Update both settings
-dzdk config --url "https://services.dzaleka.com/api" --timeout 30
-```
+# Other collections: courses, artists, poets, marketplace and more
+dzdk browse
+dzdk browse poets
 
-### Configuration
-Show and update CLI configuration settings:
-```bash
-# Show current configuration
-dzdk show_config
+# Charts, printed in the terminal
+dzdk chart --list
+dzdk chart population-growth
+dzdk chart --group Needs
 
-# Interactive configuration mode
-dzdk config --interactive
-
-# Set API URL
-dzdk config --url "https://services.dzaleka.com/api"
-
-# Set request timeout
-dzdk config --timeout 30
-```
-
-You can also update both settings at once:
-```bash
-dzdk config --url "https://services.dzaleka.com/api" --timeout 30
-```
-
-This will update the configuration file at `~/.config/dzdk/config.yaml`.
-
----
-
-## Command Reference
-
-### Health Check
-Check the health of all API endpoints with detailed response analysis:
-```bash
-dzdk health
-```
-This command provides:
-- Response status codes
-- Response times
-- Response types (JSON/Non-JSON)
-- Error messages if any
-
-### Services
-List all available services with detailed information:
-```bash
-# Basic list (12 items per page)
-dzdk services list
-
-# Navigate to specific page
-dzdk services list --page 2
-
-# Search for specific services
-dzdk services list --search "health"
-
-# Filter by category
-dzdk services list --category "medical"
-
-# Filter by status
-dzdk services list --status active
-
-# Sort results
-dzdk services list --sort-by category --sort-order desc
-
-# Combine filters with pagination
-dzdk services list --search "clinic" --category "medical" --status active --page 1
-```
-
-Service details include:
-- Service title and description
-- Category and status
-- Contact information (email, phone)
-- Website information
-- Status indicators (active/inactive/unknown)
-- Total count of matching services
-- Active filters display
-- Page navigation (12 items per page)
-
-Search and Filter Options:
-- **Search**: Search across title, description, and category
-- **Category**: Filter by specific service category
-- **Status**: Filter by service status (active/inactive/unknown)
-- **Sort By**: Sort results by title, category, or status
-- **Sort Order**: Choose ascending or descending order
-
-Get information about a specific service:
-```bash
-dzdk services get --id <service_id_or_slug>
-```
-Service details include:
-- Service title and description
-- Category and status
-- Location details (address, city)
-- Contact information (email, phone)
-- Operating hours
-- Additional metadata
-
-### Events
-List all events with key information:
-```bash
-# Basic list (12 items per page)
-dzdk events list
-
-# Navigate to specific page
-dzdk events list --page 2
-
-# Search and filter with pagination
-dzdk events list --search "workshop" --category "education" --page 1
-
-# Sort with pagination
-dzdk events list --sort-by date --sort-order desc --page 1
-```
-
-Get detailed information about a specific event:
-```bash
-dzdk events get --id <event_id_or_slug>
-```
-Event details include:
-- Title and description
-- Date and time
-- Location
-- Registration information
-- Contact details
-- Tags and categories
-
-### Photos
-List all available photos:
-```bash
-# Basic list (12 items per page)
-dzdk photos list
-
-# Navigate to specific page
-dzdk photos list --page 2
-
-# Search and filter with pagination
-dzdk photos list --search "camp" --category "events" --page 1
-
-# Sort with pagination
-dzdk photos list --sort-by date --sort-order desc --page 1
-```
-
-Get information about a specific photo:
-```bash
-dzdk photos get --id <photo_id_or_slug>
-```
-Photo details include:
-- Title and description
-- Date taken
-- Photographer information
-- Location
-- Tags and categories
-- Image metadata (size, format)
-- Download URL
-
-Upload a photo to the archive:
-```bash
-dzdk photos upload --file path/to/image.jpg --title "Photo Title" --description "Optional description"
-```
-
-Edit photo metadata:
-```bash
-dzdk photos edit --id <photo_id> --title "New Title" --description "New Description" --tags "tag1,tag2" --location "New Location" --date "2024-03-20"
-```
-
-View detailed photo metadata:
-```bash
-dzdk photos metadata --id <photo_id>
-```
-
-### Photo Albums
-Create a new album:
-```bash
-dzdk photos album create --name "My Album" --description "Album Description" --tags "tag1,tag2"
-```
-
-Add photos to an album:
-```bash
-dzdk photos album add --album-id <album_id> --photo-ids "photo1,photo2,photo3"
-```
-
-List all albums:
-```bash
-dzdk photos album list
-```
-
-Features:
-- Album creation and management
-- Photo organization
-- Tag-based categorization
-- Rich metadata display
-- Batch photo operations
-- Technical metadata viewing
-- Location and date tracking
-
-### Population
-Get comprehensive population statistics:
-```bash
+# Live data
+dzdk alerts
+dzdk weather
 dzdk population stats
-```
-Get specific demographic information:
-```bash
-dzdk population get --category <demographic_category>
-```
-Available categories:
-- age_groups
-- nationalities
-- gender
-- new_arrivals
-- historical_trends
+dzdk stats overview
 
-Statistics include:
-- Total population
-- New arrivals
-- Demographics breakdown
-- Nationality distribution
-- Historical trends
-
-### Resources
-List all available resources:
-```bash
-# Basic list (12 items per page)
-dzdk resources list
-
-# Navigate to specific page
-dzdk resources list --page 2
-
-# Search and filter with pagination
-dzdk resources list --search "report" --category "research" --page 1
-
-# Sort with pagination
-dzdk resources list --sort-by date --sort-order desc --page 1
-```
-
-Get detailed information about a specific resource:
-```bash
-dzdk resources get --id <resource_id_or_slug>
-```
-Resource information includes:
-- Title and description
-- Author and date
-- File type and size
-- Available languages
-- Download URLs
-- Version history
-- Related resources
-
-Download a resource:
-```bash
-dzdk resources fetch --id <resource_id_or_slug> --output filename.pdf
-```
-
-### Search
-Search across all resources with filtering and relevance sorting:
-```bash
-# Search across all content types
-dzdk search --query "education"
-
-# Search only in services
-dzdk search --query "health" --type services
-
-# Search with a custom result limit
-dzdk search --query "event" --limit 20
-```
-Features:
-- Cross-resource search
-- Type filtering
-- Relevance sorting
-- Result limiting
-- Rich output formatting
-
-### Batch Operations
-Download multiple resources or photos in batch:
-```bash
-# Download multiple resources
-dzdk batch download --type resources --ids "id1,id2,id3" --output-dir downloads
-
-# Download multiple photos
-dzdk batch download --type photos --ids "photo1,photo2" --output-dir photos
-```
-Features:
-- Parallel downloads
-- Progress tracking
-- Error handling
-- Automatic directory creation
-
-Upload multiple photos from a directory:
-```bash
-# Upload all photos from a directory
-dzdk batch upload --type photos --directory ./my_photos
-```
-Features:
-- Batch processing
-- File validation
-- Progress tracking
-- Error handling
-
-### Export
-Export data to CSV format:
-```bash
-# Export services to CSV
+# Files and exports
+dzdk resources fetch --id <id> --output report.pdf
 dzdk export csv --type services --output services.csv
-
-# Export population data to CSV
-dzdk export csv --type population --output population.csv
+dzdk export all --output everything.json
 ```
-Features:
-- Flattened data structure
-- Preserved metadata
-- Proper CSV formatting
 
-Generate detailed markdown reports:
+Every list and detail command accepts `--json` for scripting:
+
 ```bash
-# Generate a services report
-dzdk export report --type services --output services_report.md
-
-# Generate a population report
-dzdk export report --type population --output population_report.md
+dzdk jobs list --status open --json | jq '.[].title'
 ```
-Features:
-- Comprehensive summaries
-- Detailed item information
-- Formatted markdown output
-- Timestamps and metadata
 
-### Interactive Shell
-Start an interactive shell session with command history and tab completion:
+The full command reference is in [doc.md](doc.md).
+
+## Working offline
+
+API responses are cached in `~/.config/dzdk/cache` for five minutes by default. If the
+network drops, `dzdk` shows the last cached copy and says so. Items you viewed recently stay
+available on an unreliable connection.
+
 ```bash
-dzdk shell
+dzdk config --cache-ttl 3600      # keep responses fresh for an hour
+dzdk config --clear-cache
+dzdk --no-cache services list     # always fetch fresh data
 ```
 
-Features:
-- Command history persistence
-- Tab completion for commands
-- Command suggestions based on history
-- Rich output formatting
-- Built-in help system
-- Screen clearing
-- Easy command execution
+## For AI assistants
 
-Example shell session:
+Dzaleka Online Services also runs a read-only
+[MCP server](https://services.dzaleka.com/docs/agent-access-guide). `dzdk mcp` lists its tools
+and prints the setup command, for example for Claude Code:
+
 ```bash
-(dzdk) help
-(dzdk) services list
-(dzdk) photos upload --file photo.jpg --title "My Photo"
-(dzdk) search --query "education"
-(dzdk) clear
-(dzdk) exit
+claude mcp add --transport http dzaleka https://services.dzaleka.com/.well-known/mcp
 ```
-
-Shell Commands:
-- `help [command]`: Show help information
-- `clear`: Clear the terminal screen
-- `exit`: Exit the shell
-- All regular CLI commands are available
-
----
-
-## Output Formatting
-
-The CLI uses the Rich library to provide beautiful, colorized output:
-
-- **Tables**: Organized data presentation with color-coded columns
-- **Panels**: Detailed information in bordered boxes
-- **Progress Bars**: Visual feedback for long-running operations
-- **Status Indicators**: Color-coded success/error messages
-- **Visualizations**: Bar charts and graphs for data representation
-- **Search Results**: Formatted panels with type-specific details
-
----
 
 ## Development
 
-### Adding New Features
-1. Follow the existing code structure
-2. Add proper error handling
-3. Include progress indicators for long operations
-4. Add appropriate documentation
-5. Update the README with new commands
+```bash
+pip install -e ".[dev]"
+pytest
+textual run --dev dzdk.tui.app:DzdkApp   # live CSS reloading while you edit dzdk/tui/dzdk.tcss
+```
 
-### Testing
-1. Run the test suite: `pytest`
-2. Test new features thoroughly
-3. Verify error handling
-4. Check output formatting
+The code is split so that the command line and the app share everything except presentation:
 
----
+| File | Contents |
+|---|---|
+| `dzdk/api.py` | HTTP client: rate limits, retries, error details, cache |
+| `dzdk/catalog.py` | Collections and their columns, used by the commands and the app |
+| `dzdk/insights.py` | Chart definitions, drawn by both the app and `dzdk chart` |
+| `dzdk/render.py` | Detail views as Markdown, shared by the commands and the app |
+| `dzdk/cli.py` | Click commands |
+| `dzdk/tui/` | Textual app, widgets, charts, command palette, stylesheet and window sizing |
+| `scripts/make_logo.py` | Regenerates the terminal logo from `docs/images/dzaleka-logo.png` |
 
-## Contributing
+On macOS, if your project is inside an iCloud-synced folder such as `Documents`, name the
+virtual environment `venv` rather than `.venv`. iCloud marks files inside dot-folders as
+hidden, and Python 3.13 ignores hidden `.pth` files, so an editable install stops working
+with `ModuleNotFoundError: No module named 'dzdk'`.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Update documentation
-6. Submit a pull request
+Tests mock the API with [`responses`](https://github.com/getsentry/responses) and drive the
+app with Textual's test pilot, so they run without network access.
 
----
+## Data and licence
 
-## License
+Content comes from Dzaleka Online Services and is published under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) unless a page says otherwise.
+Attribute it to "Dzaleka Online Services" with a link to the source page. Photos and artworks
+may carry separate rights, so check the credit on each one. Community listings can be
+unverified; `dzdk` marks them.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+The code is MIT licensed. See [LICENSE](LICENSE).
 
----
-
-## Contact
-
-For questions or support, please contact:
-- Email: contact@mail.dzaleka.com
-- Website: https://services.dzaleka.com 
+**Need urgent help?** Go to <https://services.dzaleka.com/get-help-now>.
