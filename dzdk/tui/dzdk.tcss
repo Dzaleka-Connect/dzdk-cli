@@ -1,0 +1,446 @@
+/* dzdk terminal UI.
+ *
+ * Panes follow Harlequin: a thin rounded border with the pane's title set
+ * into it, muted until the pane has focus, then drawn in the accent colour.
+ * Charts follow Dolphie: braille line and block bar charts, grouped in tabs.
+ * One accent colour ($primary); red is reserved for alerts and errors.
+ */
+
+Screen {
+    background: $background;
+}
+
+* {
+    scrollbar-size-vertical: 1;
+    scrollbar-size-horizontal: 1;
+    scrollbar-background: $background;
+    scrollbar-background-hover: $background;
+    scrollbar-background-active: $background;
+    scrollbar-color: $panel-lighten-2;
+    scrollbar-color-hover: $primary 60%;
+    scrollbar-color-active: $primary;
+    scrollbar-corner-color: $background;
+}
+
+/* ------------------------------------------------------------- panes */
+
+.pane {
+    border: round $panel-lighten-2;
+    border-title-color: $text-muted;
+    border-title-style: bold;
+    border-subtitle-color: $text-muted;
+    border-title-align: left;
+    border-subtitle-align: right;
+    background: $background;
+}
+
+.pane.-maximized {
+    width: 1fr;
+    height: 1fr;
+    margin: 0;
+}
+
+.pane:focus-within, .pane:focus {
+    border: round $primary;
+    border-title-color: $primary;
+}
+
+/* ------------------------------------------------------------ chrome */
+
+#topbar {
+    height: 1;
+    padding: 0 2;
+    background: $surface;
+}
+
+#brand {
+    width: 1fr;
+}
+
+#status {
+    width: auto;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+Tabs {
+    background: $surface;
+    padding: 0 1;
+}
+
+Tab {
+    padding: 0 2;
+    color: $text-muted;
+}
+
+Tab.-active {
+    color: $text;
+    text-style: bold;
+}
+
+TabPane {
+    padding: 0;
+}
+
+DzdkPane {
+    height: 1fr;
+}
+
+Footer {
+    background: $background;
+    scrollbar-size-horizontal: 0;  /* overflowing key hints scroll, without a bar over them */
+}
+
+FooterKey {
+    background: $background;
+    .footer-key--key {
+        color: $primary;
+        background: $background;
+        text-style: bold;
+        padding: 0 0 0 1;
+    }
+    .footer-key--description {
+        color: $text-muted;
+        background: $background;
+        padding: 0 1 0 0;
+    }
+    &:hover {
+        background: $boost;
+    }
+}
+
+Toast {
+    background: $surface;
+    tint: white 0%;
+    border-right: none;
+    border-left: wide $primary;
+    padding: 0 1;
+}
+
+Toast.-warning {
+    border-left: wide $warning;
+}
+
+Toast.-error {
+    border-left: wide $error;
+}
+
+Toast .toast--title {
+    color: $primary;
+    text-style: bold;
+}
+
+/* ------------------------------------------------------------- home */
+
+#home {
+    padding: 1 2;
+}
+
+#masthead {
+    height: auto;
+    margin: 0 1 1 1;
+}
+
+#logo {
+    width: auto;
+    height: auto;
+    margin-right: 3;
+}
+
+#masthead-text {
+    width: 1fr;
+    height: auto;
+    padding-top: 1;
+}
+
+#masthead-title {
+    text-style: bold;
+}
+
+#masthead-sub {
+    color: $text-muted;
+}
+
+#masthead-sub {
+    margin-bottom: 1;
+}
+
+#masthead-hint {
+    margin-top: 1;
+}
+
+#stats {
+    height: 4;
+    margin: 0 0 1 0;
+}
+
+Stat {
+    width: 1fr;
+    height: 4;
+    padding: 0 2 0 1;
+    margin: 0 1;
+    border-left: wide $primary;
+    background: $surface;
+}
+
+.stat-label {
+    color: $text-muted;
+}
+
+.stat-value {
+    text-style: bold;
+    color: $text;
+}
+
+.stat-note {
+    color: $text-muted;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+}
+
+.home-row {
+    height: auto;
+}
+
+Section {
+    width: 1fr;
+    height: auto;
+    padding: 0 1;
+    margin: 0 1 1 1;
+}
+
+#sec-alerts, #sec-jobs {
+    width: 3fr;
+}
+
+#sec-news, #sec-population {
+    width: 2fr;
+}
+
+#home-news, #home-jobs, #home-alerts {
+    link-style: none;
+    link-color: $text;
+    link-background: transparent;
+    link-style-hover: underline;
+    link-color-hover: $primary;
+    link-background-hover: transparent;
+}
+
+#home-news, #home-jobs {
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
+
+#trend {
+    height: 2;
+    margin-top: 1;
+}
+
+#trend > .sparkline--max-color {
+    color: $primary;
+}
+
+#trend > .sparkline--min-color {
+    color: $primary 30%;
+}
+
+#trend-label, #api-line {
+    color: $text-muted;
+}
+
+#api-line {
+    margin: 0 1;
+}
+
+/* Responsive layout. DzdkApp.apply_layout sets these classes on the app:
+ *   -narrow  width < 110: stack side-by-side content, one chart per row
+ *   -short   height < 34: small logo, tighter header
+ *   -tiny    width < 80: stats in a single column
+ */
+
+App.-narrow .home-row {
+    layout: vertical;
+    height: auto;
+}
+
+App.-narrow Section, App.-narrow #sec-alerts, App.-narrow #sec-jobs,
+App.-narrow #sec-news, App.-narrow #sec-population {
+    width: 1fr;
+}
+
+App.-narrow #stats {
+    layout: grid;
+    grid-size: 2;
+    grid-rows: 4;
+    grid-gutter: 1 0;
+    height: auto;
+}
+
+App.-tiny #stats {
+    grid-size: 1;
+}
+
+App.-narrow #masthead-hint, App.-short #masthead-hint {
+    display: none;
+}
+
+App.-short #masthead-text {
+    padding-top: 0;
+}
+
+App.-short #home {
+    padding: 0 1;
+}
+
+App.-narrow .chart-grid {
+    grid-size: 1;
+}
+
+App.-narrow .sidebar {
+    margin: 0 1;
+}
+
+App.-narrow .detail {
+    margin: 0 1;
+}
+
+App.-tiny #brand {
+    display: none;
+}
+
+/* ---------------------------------------------------------- insights */
+
+#insight-groups Tabs {
+    background: $background;
+    margin: 0 1;
+}
+
+#insight-groups TabPane {
+    padding: 0 1;
+}
+
+.chart-grid {
+    grid-size: 2;
+    grid-gutter: 0 1;
+    grid-rows: 17;
+    height: auto;
+    margin-top: 1;
+}
+
+.chart-panel {
+    height: 17;
+    padding: 0 1;
+}
+
+Chart {
+    height: 1fr;
+}
+
+#incidents {
+    padding: 1 0;
+}
+
+
+/* ------------------------------------------------ list + detail panes */
+
+.sidebar {
+    width: 46%;
+    min-width: 44;
+    margin: 0 0 0 1;
+}
+
+.toolbar {
+    height: 1;
+    margin: 0 0 1 0;
+}
+
+.toolbar Input {
+    width: 1fr;
+}
+
+.toolbar Select {
+    width: 22;
+    margin-left: 1;
+}
+
+.sidebar DataTable, .sidebar OptionList, .sidebar Tree {
+    height: 1fr;
+    background: $background;
+    border: none;
+}
+
+DataTable > .datatable--header {
+    color: $text-muted;
+    background: $background;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: $primary 25%;
+    color: $text;
+}
+
+DataTable:focus > .datatable--cursor {
+    background: $primary 40%;
+}
+
+OptionList > .option-list--option-highlighted {
+    background: $primary 40%;
+}
+
+.detail {
+    width: 1fr;
+    padding: 0 2;
+    margin: 0 1;
+}
+
+/* Markdown: left-aligned, quiet headings */
+
+Markdown {
+    padding: 0;
+    margin: 0;
+}
+
+MarkdownH1 {
+    content-align: left top;
+    color: $text;
+    background: transparent;
+    text-style: bold;
+    padding: 0;
+    margin: 0;
+}
+
+MarkdownH2 {
+    color: $primary;
+    background: transparent;
+    text-style: bold;
+    margin: 1 0 0 0;
+}
+
+MarkdownHorizontalRule {
+    border-bottom: solid $panel;
+}
+
+MarkdownBlockQuote {
+    border-left: outer $primary 60%;
+    background: $surface;
+}
+
+/* ------------------------------------------------------------- help */
+
+HelpScreen {
+    align: center middle;
+    background: $background 60%;
+}
+
+#help-dialog {
+    width: 76;
+    max-width: 95%;
+    height: 80%;
+    border: round $primary;
+    border-title-color: $primary;
+    background: $surface;
+    padding: 0 3;
+}
