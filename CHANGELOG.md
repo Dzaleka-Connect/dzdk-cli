@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
 
 - Typing `dzdk` with no command at a terminal opens the full-screen app, as `claude` and
   similar tools do. Piped or scripted, it still prints the overview. `dzdk help` prints the

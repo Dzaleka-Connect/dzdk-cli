@@ -32,7 +32,9 @@ def test_welcome_and_help(run):
 
 
 def test_version(run):
-    assert "0.2.0" in run("--version").output
+    from dzdk import __version__
+
+    assert __version__ in run("--version").output
 
 
 # ------------------------------------------------------------ collections
