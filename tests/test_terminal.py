@@ -87,3 +87,31 @@ def test_config_window_size(config_home):
     assert runner.invoke(cli, ["config", "--window-size", "off"]).exit_code == 0
     assert "window_size: 'off'" in (config_home / "config.yaml").read_text()
     assert runner.invoke(cli, ["config", "--window-size", "tiny"]).exit_code == 2
+
+
+def test_bare_dzdk_opens_the_app_at_a_terminal(monkeypatch):
+    import sys
+
+    import dzdk.tui.app as app_module
+
+    cli_module = sys.modules["dzdk.cli"]  # `dzdk.cli` the attribute is the click group
+
+    launched = []
+    monkeypatch.setattr(cli_module, "is_interactive", lambda: True)
+    monkeypatch.setattr(terminal, "grow_window", lambda size: None)
+    monkeypatch.setattr(app_module.DzdkApp, "run", lambda self: launched.append(self.initial_tab))
+    result = CliRunner().invoke(cli, [])
+    assert result.exit_code == 0
+    assert launched == ["home"]
+
+
+def test_bare_dzdk_prints_overview_when_piped():
+    result = CliRunner().invoke(cli, [])  # CliRunner is not a terminal
+    assert "open the full-screen app" in result.output
+    assert "Usage:" in result.output
+
+
+def test_help_command():
+    result = CliRunner().invoke(cli, ["help"])
+    assert result.exit_code == 0
+    assert "open the full-screen app" in result.output and "Commands:" in result.output

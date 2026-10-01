@@ -26,7 +26,7 @@ def run():
 def test_welcome_and_help(run):
     result = run()
     assert result.exit_code == 0
-    assert "dzdk tui" in result.output
+    assert "open the full-screen app" in result.output
     assert "get-help-now" in result.output
     assert "Usage:" in result.output
 

@@ -222,7 +222,7 @@ def safe_filename(name: str) -> str:
 WELCOME = f"""[bold]dzdk[/bold] [dim]{__version__}[/dim]  Dzaleka Online Services from the terminal
 
 [bold]Browse[/bold]
-  dzdk tui                           full-screen app
+  dzdk                               open the full-screen app
   dzdk search "legal aid"            search every collection
   dzdk services list -s health       also: events, jobs, news, resources, photos
   dzdk services get <ID>             details for one item
@@ -240,30 +240,51 @@ WELCOME = f"""[bold]dzdk[/bold] [dim]{__version__}[/dim]  Dzaleka Online Service
 """
 
 
+def is_interactive() -> bool:
+    """True when a person is at the terminal (not piped, redirected or scripted)."""
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def print_overview(ctx: click.Context) -> None:
+    from rich.table import Table as Grid
+
+    from dzdk.tui.logo import LOGO_COLOR, LOGO_SMALL
+
+    header = Grid.grid(padding=(0, 3))
+    header.add_row(Text(LOGO_SMALL, style=LOGO_COLOR), WELCOME.split("\n\n", 1)[0].strip()
+                   + "\n\n[dim]Directory, news and open data for Dzaleka Refugee Camp[/dim]")
+    console.print(header)
+    console.print()
+    console.print(WELCOME.split("\n\n", 1)[1])
+    click.echo(ctx.find_root().get_help())
+
+
 @click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
 @click.option("--no-cache", is_flag=True, help="Bypass the local response cache.")
 @click.version_option(__version__, prog_name="dzdk")
 @click.pass_context
 def cli(ctx: click.Context, no_cache: bool) -> None:
-    """dzdk - Dzaleka Online Services CLI.
+    """dzdk - Dzaleka Online Services in your terminal.
 
-    Browse services, events, jobs, news, resources, photos and the Dzaleka
-    Encyclopedia from the terminal. Run `dzdk tui` for the full-screen app.
+    Run `dzdk` on its own to open the full-screen app. Add a command to look
+    things up directly, e.g. `dzdk search "legal aid"`. `dzdk help` shows an
+    overview of everything.
     """
     ctx.ensure_object(dict)
     ctx.obj["no_cache"] = no_cache
     if ctx.invoked_subcommand is None:
-        from rich.table import Table as Grid
+        if is_interactive():
+            ctx.invoke(tui)
+        else:
+            # Piped or scripted: print the overview rather than opening a full-screen app.
+            print_overview(ctx)
 
-        from dzdk.tui.logo import LOGO_COLOR, LOGO_SMALL
 
-        header = Grid.grid(padding=(0, 3))
-        header.add_row(Text(LOGO_SMALL, style=LOGO_COLOR), WELCOME.split("\n\n", 1)[0].strip()
-                       + "\n\n[dim]Directory, news and open data for Dzaleka Refugee Camp[/dim]")
-        console.print(header)
-        console.print()
-        console.print(WELCOME.split("\n\n", 1)[1])
-        click.echo(ctx.get_help())
+@cli.command("help")
+@click.pass_context
+def help_command(ctx: click.Context) -> None:
+    """Show an overview of dzdk's commands."""
+    print_overview(ctx)
 
 
 # ----------------------------------------------------------------- config

@@ -185,6 +185,14 @@ Stat {
     background: $surface;
 }
 
+/* Fixed full width: sized to content, a label could keep the width of its "…"
+   placeholder when the real value arrives in the same frame. */
+.stat-label, .stat-value, .stat-note {
+    width: 1fr;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
+
 .stat-label {
     color: $text-muted;
 }
