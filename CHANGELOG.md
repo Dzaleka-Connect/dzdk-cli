@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Typing `dzdk` with no command at a terminal opens the full-screen app, as `claude` and
+  similar tools do. Piped or scripted, it still prints the overview. `dzdk help` prints the
+  overview at any time.
+- README: install as a global command with `uv tool install dzdk` or `pipx install dzdk`.
+- Fixed: in narrow windows the Home tab could cut its numbers down to one character
+  (for example "5" instead of "55,425") when the data loaded from the cache.
+
 ## 0.2.0
 
 ### Added

@@ -6,7 +6,7 @@ Malawi.
 
 `dzdk` has two parts:
 
-- **A full-screen app** (`dzdk tui`) for browsing services, the Dzaleka Encyclopedia,
+- **A full-screen app**: type `dzdk` and it opens, for browsing services, the Dzaleka Encyclopedia,
   events, jobs, news, resources and photos, with charts of population, needs, funding,
   activity and weather. Built with [Textual](https://textual.textualize.io) and
   [textual-plotext](https://github.com/Textualize/textual-plotext).
@@ -20,11 +20,16 @@ It needs no account or API key.
 
 ## Install
 
-Requires Python 3.9 or later.
+Requires Python 3.9 or later. To get a `dzdk` command that works in any terminal, install it
+as a tool with [uv](https://docs.astral.sh/uv/) or [pipx](https://pipx.pypa.io/):
 
 ```bash
-pip install dzdk
+uv tool install dzdk        # or: pipx install dzdk
 ```
+
+Then type `dzdk` to open the app.
+
+Plain `pip install dzdk` also works inside a virtual environment.
 
 To serve the app in a web browser as well as the terminal, install the `serve` extra:
 
@@ -45,8 +50,12 @@ pip install -e ".[dev]"
 ## The app
 
 ```bash
-dzdk tui
+dzdk
 ```
+
+At a terminal, `dzdk` on its own opens the full-screen app, the same as `dzdk tui`. When
+its output is piped or used in a script, it prints an overview instead. `dzdk help` always
+prints the overview.
 
 The app is designed for a window of about 140×42 characters. If yours is smaller, `dzdk tui`
 asks the terminal to grow the window (macOS Terminal, iTerm2 and xterm support this) and
@@ -129,7 +138,7 @@ dzdk serve --port 8000
 
 ## Commands
 
-Run `dzdk` on its own for an overview, or add `--help` to any command.
+Run `dzdk help` for an overview, or add `--help` to any command.
 
 ```bash
 # Find things
@@ -202,6 +211,7 @@ claude mcp add --transport http dzaleka https://services.dzaleka.com/.well-known
 ```bash
 pip install -e ".[dev]"
 pytest
+uv tool install --editable . --force     # a global `dzdk` that runs your working copy
 textual run --dev dzdk.tui.app:DzdkApp   # live CSS reloading while you edit dzdk/tui/dzdk.tcss
 ```
 

@@ -53,6 +53,10 @@ dzdk config --reset                    # restore every default
 | `--version` | Print the version |
 | `-h`, `--help` | Help for any command |
 
+With no command, `dzdk` opens the full-screen app when stdin and stdout are a terminal, and
+prints an overview when they are not (pipes, scripts, CI). `dzdk help` always prints the
+overview.
+
 ## Collections
 
 Six collections have their own command group: `services`, `events`, `jobs`, `news`,
@@ -222,6 +226,7 @@ terminal.
 ## The app
 
 ```bash
+dzdk                      # at a terminal: opens the app with the defaults below
 dzdk tui [--tab home|insights|services|wiki|events|jobs|news|resources|photos|search]
          [--size COLSxROWS] [--no-resize]
 dzdk serve [--host HOST] [--port PORT]       # needs: pip install "dzdk[serve]"
